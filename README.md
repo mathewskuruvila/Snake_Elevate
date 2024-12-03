@@ -1,5 +1,5 @@
 
-# Snake_Elevate - Privilege Escalation Checker
+# Snake_Elevate 🐍 - Privilege Escalation Checker
 
 **Snake_Elevate** is a Python-based tool for ethical hacking and security auditing. It automates the detection of misconfigurations, vulnerabilities, and potential privilege escalation paths in Linux environments. Perfect for penetration testers, security researchers, and system administrators aiming to secure their systems. 🚀
 
