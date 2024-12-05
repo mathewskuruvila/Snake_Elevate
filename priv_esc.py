@@ -16,15 +16,21 @@ def print_header(title):
     print(f"\n{CYAN}=== {title} ==={RESET}")
 
 def check_sudo():
+    """
+    Check if the user has sudo privileges.
+    """
     print_header("Checking Sudo Privileges")
     try:
         result = subprocess.run(['sudo', '-n', 'true'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode == 0:
             print(f"{GREEN}[+] User has sudo privileges.{RESET}")
+            return True
         else:
             print(f"{RED}[-] User does not have sudo privileges.{RESET}")
+            return False
     except Exception as e:
         print(f"{RED}[!] Error checking sudo privileges: {e}{RESET}")
+        return False
 
 def check_suid_files():
     print_header("Searching for SUID Binaries")
@@ -69,10 +75,13 @@ def check_cron_jobs():
     except Exception as e:
         print(f"{RED}[!] Error reading cron jobs: {e}{RESET}")
 
-def check_shadow_file_permissions():
+def check_shadow_file_permissions(sudo_allowed):
     print_header("Checking /etc/shadow Permissions")
     try:
-        result = subprocess.run(['ls', '-la', '/etc/shadow'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        cmd = ['ls', '-la', '/etc/shadow']
+        if sudo_allowed:
+            cmd.insert(0, 'sudo')
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(result.stdout)
     except Exception as e:
         print(f"{RED}[!] Error checking /etc/shadow permissions: {e}{RESET}")
@@ -84,16 +93,19 @@ def check_path_variable():
     if '.' in path.split(':'):
         print(f"{YELLOW}[!] Warning: '.' in PATH could allow privilege escalation.{RESET}")
 
-def check_weak_passwords():
+def check_weak_passwords(sudo_allowed):
     print_header("Checking for Weak Passwords")
     try:
         passwd_content = subprocess.run(['cat', '/etc/passwd'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(f"{GREEN}[+] /etc/passwd content:{RESET}")
         print(passwd_content.stdout)
 
-        shadow_content = subprocess.run(['sudo', 'cat', '/etc/shadow'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{GREEN}[+] /etc/shadow content (requires sudo):{RESET}")
-        print(shadow_content.stdout)
+        if sudo_allowed:
+            shadow_content = subprocess.run(['sudo', 'cat', '/etc/shadow'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            print(f"{GREEN}[+] /etc/shadow content (requires sudo):{RESET}")
+            print(shadow_content.stdout)
+        else:
+            print(f"{YELLOW}[!] Skipping /etc/shadow as it requires sudo privileges.{RESET}")
     except Exception as e:
         print(f"{RED}[!] Error reading password files: {e}{RESET}")
 
@@ -121,15 +133,15 @@ def main():
     print(f"{CYAN}Welcome to Snake Elevate - Advanced Privilege Escalation Checker!{RESET}")
     print(f"{CYAN}============================================={RESET}")
     
-    check_sudo()
+    sudo_allowed = check_sudo()
     check_suid_files()
     check_kernel_version()
     check_environment_variables()
     check_writable_files()
     check_cron_jobs()
-    check_shadow_file_permissions()
+    check_shadow_file_permissions(sudo_allowed)
     check_path_variable()
-    check_weak_passwords()
+    check_weak_passwords(sudo_allowed)
     check_docker_privileges()
     check_unmounted_drives()
     
