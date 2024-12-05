@@ -1,139 +1,126 @@
 import os
 import subprocess
 import platform
-from colorama import Fore, Style, init
 
-# Initialize colorama
-init(autoreset=True)
+# ANSI escape codes for colorful output
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+CYAN = "\033[96m"
+RESET = "\033[0m"
 
-def print_banner():
+def print_header(title):
     """
-    Print the banner with ASCII art.
+    Print a formatted header for each section.
     """
-    banner = f"""
-{Fore.RED}      ___       __      _       __      __ _
-{Fore.RED}     /   | ____/ /___  (_)___  / /___  / /(_)
-{Fore.RED}    / /| |/ __  / __ \/ / __ \/ / __ \/ / / 
-{Fore.RED}   / ___ / /_/ / /_/ / / / / / / /_/ / / /  
-{Fore.RED}  /_/  |_\__,_/\____/_/_/ /_/_/\____/_/_/   
-
-{Fore.CYAN}========================================
-{Fore.GREEN}            Snake_Elevate              
-{Fore.CYAN}========================================
-    """
-    print(banner)
-
-def print_section(title):
-    """
-    Print a section header with formatting.
-    """
-    print(f"\n{Fore.YELLOW}[*] {title}")
-    print(f"{Fore.CYAN}{'-' * len(title)}")
+    print(f"\n{CYAN}=== {title} ==={RESET}")
 
 def check_sudo():
-    print_section("Checking Sudo Privileges")
+    print_header("Checking Sudo Privileges")
     try:
         result = subprocess.run(['sudo', '-n', 'true'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode == 0:
-            print(f"{Fore.GREEN}[+] User has sudo privileges.")
+            print(f"{GREEN}[+] User has sudo privileges.{RESET}")
         else:
-            print(f"{Fore.RED}[-] User does not have sudo privileges.")
+            print(f"{RED}[-] User does not have sudo privileges.{RESET}")
     except Exception as e:
-        print(f"{Fore.RED}[!] Error checking sudo privileges: {e}")
+        print(f"{RED}[!] Error checking sudo privileges: {e}{RESET}")
 
 def check_suid_files():
-    print_section("Searching for SUID Binaries")
+    print_header("Searching for SUID Binaries")
     try:
         result = subprocess.run(['find', '/', '-perm', '-4000', '-type', 'f', '-exec', 'ls', '-la', '{}', '+'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(result.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error searching for SUID files: {e}")
+        print(f"{RED}[!] Error searching for SUID files: {e}{RESET}")
 
 def check_kernel_version():
-    print_section("Checking Kernel Version")
+    print_header("Checking Kernel Version")
     kernel_version = platform.release()
-    print(f"{Fore.GREEN}[+] Kernel version: {kernel_version}")
-    print(f"{Fore.YELLOW}[*] Check this version against known vulnerabilities (e.g., CVE databases).")
+    print(f"{GREEN}[+] Kernel version: {kernel_version}{RESET}")
+    print(f"{YELLOW}[!] Check this version against known vulnerabilities (e.g., CVE databases).{RESET}")
 
 def check_environment_variables():
-    print_section("Checking Environment Variables")
+    print_header("Checking Environment Variables")
     env_vars = os.environ
     for key, value in env_vars.items():
-        print(f"{Fore.BLUE}{key}: {value}")
+        print(f"{key}: {value}")
 
 def check_writable_files():
-    print_section("Searching for World-Writable Files")
+    print_header("Searching for World-Writable Files")
     try:
         result = subprocess.run(['find', '/', '-perm', '-2', '-type', 'f', '-exec', 'ls', '-la', '{}', '+'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(result.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error searching for world-writable files: {e}")
+        print(f"{RED}[!] Error searching for world-writable files: {e}{RESET}")
 
 def check_cron_jobs():
-    print_section("Checking Cron Jobs")
+    print_header("Checking Cron Jobs")
     try:
         result = subprocess.run(['cat', '/etc/crontab'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{Fore.GREEN}[+] System-wide crontab:")
+        print(f"{GREEN}[+] System-wide crontab:{RESET}")
         print(result.stdout)
-
+        
         user_cron = subprocess.run(['crontab', '-l'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{Fore.GREEN}[+] Current user crontab:")
+        print(f"{GREEN}[+] Current user crontab:{RESET}")
         print(user_cron.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading cron jobs: {e}")
+        print(f"{RED}[!] Error reading cron jobs: {e}{RESET}")
 
 def check_shadow_file_permissions():
-    print_section("Checking /etc/shadow Permissions")
+    print_header("Checking /etc/shadow Permissions")
     try:
         result = subprocess.run(['ls', '-la', '/etc/shadow'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(result.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error checking /etc/shadow permissions: {e}")
+        print(f"{RED}[!] Error checking /etc/shadow permissions: {e}{RESET}")
 
 def check_path_variable():
-    print_section("Checking PATH Variable")
+    print_header("Checking PATH Variable")
     path = os.environ.get('PATH', '')
-    print(f"{Fore.GREEN}[+] Current PATH: {path}")
+    print(f"{GREEN}[+] Current PATH: {path}{RESET}")
     if '.' in path.split(':'):
-        print(f"{Fore.RED}[!] Warning: '.' in PATH could allow privilege escalation.")
+        print(f"{YELLOW}[!] Warning: '.' in PATH could allow privilege escalation.{RESET}")
 
 def check_weak_passwords():
-    print_section("Checking for Weak Passwords")
+    print_header("Checking for Weak Passwords")
     try:
         passwd_content = subprocess.run(['cat', '/etc/passwd'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{Fore.GREEN}[+] /etc/passwd content:")
+        print(f"{GREEN}[+] /etc/passwd content:{RESET}")
         print(passwd_content.stdout)
 
         shadow_content = subprocess.run(['sudo', 'cat', '/etc/shadow'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{Fore.GREEN}[+] /etc/shadow content (requires sudo):")
+        print(f"{GREEN}[+] /etc/shadow content (requires sudo):{RESET}")
         print(shadow_content.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading password files: {e}")
+        print(f"{RED}[!] Error reading password files: {e}{RESET}")
 
 def check_docker_privileges():
-    print_section("Checking Docker Privileges")
+    print_header("Checking Docker Privileges")
     try:
         groups = subprocess.run(['groups'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if 'docker' in groups.stdout:
-            print(f"{Fore.GREEN}[+] User is in the Docker group. This could be exploited for privilege escalation.")
+            print(f"{YELLOW}[+] User is in the Docker group. This could be exploited for privilege escalation.{RESET}")
         else:
-            print(f"{Fore.RED}[-] User is not in the Docker group.")
+            print(f"{RED}[-] User is not in the Docker group.{RESET}")
     except Exception as e:
-        print(f"{Fore.RED}[!] Error checking Docker group membership: {e}")
+        print(f"{RED}[!] Error checking Docker group membership: {e}{RESET}")
 
 def check_unmounted_drives():
-    print_section("Checking for Unmounted Drives")
+    print_header("Checking for Unmounted Drives")
     try:
         result = subprocess.run(['lsblk'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"{Fore.GREEN}[+] Drive information:")
+        print(f"{GREEN}[+] Drive information:{RESET}")
         print(result.stdout)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error checking drives: {e}")
+        print(f"{RED}[!] Error checking drives: {e}{RESET}")
 
 def main():
-    print_banner()
+    print(f"{CYAN}Welcome to Snake Elevate - Advanced Privilege Escalation Checker!{RESET}")
+    print(f"{CYAN}============================================={RESET}")
+    
     check_sudo()
     check_suid_files()
     check_kernel_version()
@@ -145,7 +132,9 @@ def main():
     check_weak_passwords()
     check_docker_privileges()
     check_unmounted_drives()
-    print(f"\n{Fore.YELLOW}[*] Remember to use findings responsibly and within the scope of your engagement.")
+    
+    print(f"{CYAN}============================================={RESET}")
+    print(f"{CYAN}Created by 0xMaximux{RESET}")
 
 if __name__ == "__main__":
     main()
